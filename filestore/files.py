@@ -94,19 +94,24 @@ class Files:
         return filepath
 
     def __setitem__(self, hexdigest, data):
+        self.put(data, hexdigest=hexdigest)
+    
+    def put(self, data, hexdigest=None):
+        if hexdigest is None:
+            hexdigest = self.hash_func(data).hexdigest()
+        else:
+            hexdigest = hexdigest.lower()
+            actual = self.hash_func(data).hexdigest()
+            if hexdigest != actual:
+                raise ValueError('actual hash %s != hexdigest %s' % \
+                                    (actual, hexdigest))
         #check if it already exists
-        hexdigest = hexdigest.lower()
         try:
             self[hexdigest]
         except (KeyError, DataError):
             pass
         else:
             return
-        #validate the data
-        actual = self.hash_func(data).hexdigest()
-        if hexdigest != actual:
-            raise ValueError('actual hash %s != hexdigest %s' % \
-                                (actual, hexdigest))
         #create our entry
         con = sqlite3.connect(self._db)
         c = con.execute(INSERT_HEXDIGEST, hexdigest) 
