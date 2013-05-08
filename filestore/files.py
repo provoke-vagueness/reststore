@@ -54,7 +54,8 @@ class Files:
             con.execute(FILES_hexdigest_IDX)
             con.commit() 
             self.index = 0     
-        self._width = math.ceil(math.pow(tune_size, 1.0/3))
+        self._folder_width = math.ceil(math.pow(tune_size, 1.0/3))
+        self._folder_fmt = "%%0%sd" % len(str(self._folder_width))
         self._do_assert_data_ok = assert_data_ok
 
     def __len__(self):
@@ -116,9 +117,10 @@ class Files:
         con = sqlite3.connect(self._db)
         c = con.execute(INSERT_HEXDIGEST, hexdigest) 
         rowid = c.lastrowid
-        l1 = str(random.randint(0, self._width))
-        l2 = str(random.randint(0, self._width))
-        path = os.path.join(l1, l2, str(rowid))
+        l1 = random.randint(0, self._folder_width)
+        l2 = random.randint(0, self._folder_width)
+        path = os.path.join(self._folder_fmt%l1, 
+                            self._folder_fmt%l2, str(rowid))
         c = con.execute(INSERT_HEXDIGEST, path) 
         filepath = os.path.join(self._root, path)
         with open(filepath, 'wb') as f:
