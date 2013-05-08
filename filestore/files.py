@@ -118,7 +118,7 @@ class Files:
         rowid = c.lastrowid
         l1 = str(random.randint(0, self._width))
         l2 = str(random.randint(0, self._width))
-        path = os.path.join(str(folder), str(folder), str(rowid))
+        path = os.path.join(l1, l2, str(rowid))
         c = con.execute(INSERT_HEXDIGEST, path) 
         filepath = os.path.join(self._root, path)
         with open(filepath, 'wb') as f:
