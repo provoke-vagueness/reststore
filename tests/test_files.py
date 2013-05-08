@@ -1,6 +1,5 @@
 import unittest
 import shutil
-import hashlib
 
 import filestore
 
@@ -15,7 +14,7 @@ class TestFiles(unittest.TestCase):
 
     def test_set_and_get(self):
         data = 'abcdefg'
-        digest = hashlib.md5(data).hexdigest()
+        digest = self.files.hash_func(data).hexdigest()
         self.files[digest] = data
         self.files[digest] = data
         self.files.put(data)
