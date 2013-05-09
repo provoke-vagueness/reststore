@@ -19,11 +19,11 @@ CREATE TABLE IF NOT EXISTS files (\
 FILES_HEXDIGEST_IDX = "\
 CREATE UNIQUE INDEX files_hexdigest_idx on files(hexdigest);"
 LAST_ROWID = "SELECT MAX(rowid) from files;"
-SELECT_FILEPATH = "SELECT filepath from files where hexdigest='?'"
-INSERT_HEXDIGEST = "INSERT INTO files (hexdigest) value (?)"
-UPDATE_FILEPATH = "UPDATE files set filepath='?' where hexdigest='?'"
+SELECT_FILEPATH = "SELECT filepath from files where hexdigest='%s'"
+INSERT_HEXDIGEST = "INSERT INTO files (hexdigest) values ('%s')"
+UPDATE_FILEPATH = "UPDATE files set filepath='%s' where hexdigest='%s'"
 SELECT_FILEPATH_HEXDIGEST = "\
-SELECT (hexdigest, filepath) from files where rowid=?;"
+SELECT (hexdigest, filepath) from files where rowid=%s;"
 
 
 class DataError(Exception): pass
@@ -44,14 +44,14 @@ class Files:
         self.hash_len = len(hash_func('').hexdigest())
         self._root = os.path.join(files_root, name)
         #create our db if it doesn't exist already
-        self._db = os.path.join(self.root, 'files.db')
+        self._db = os.path.join(self._root, 'files.db')
         if not os.path.exists(self._db):
             #new repo...  lets create it
             if not os.path.exists(self._root):
                 os.makedirs(self._root)
             con = sqlite3.connect(self._db)
             con.execute(FILES_TABLE)
-            con.execute(FILES_hexdigest_IDX)
+            con.execute(FILES_HEXDIGEST_IDX)
             con.commit() 
             self.index = 0     
         self._folder_width = math.ceil(math.pow(tune_size, 1.0/3))
@@ -84,12 +84,11 @@ class Files:
         #look up hash in database
         con = sqlite3.connect(self._db)
         c = con.execute(LAST_ROWID)
-        c = con.execute(SELECT_FILEPATH, (hexdigest,))
+        c = con.execute(SELECT_FILEPATH % hexdigest)
         res = c.fetchone()
         if res is None:
             raise KeyError('%s not found' % hexdigest)
-        filepath, _ = res
-        filepath = os.path.join(self._root, filepath)
+        filepath = os.path.join(self._root, res[0])
         if self._do_assert_data_ok:
             self._assert_data_ok(hexdigest, filepath)          
         return filepath
@@ -115,13 +114,17 @@ class Files:
             return
         #create our entry
         con = sqlite3.connect(self._db)
-        c = con.execute(INSERT_HEXDIGEST, hexdigest) 
+        c = con.execute(INSERT_HEXDIGEST % hexdigest) 
         rowid = c.lastrowid
         l1 = random.randint(0, self._folder_width)
         l2 = random.randint(0, self._folder_width)
-        path = os.path.join(self._folder_fmt%l1, 
-                            self._folder_fmt%l2, str(rowid))
-        c = con.execute(INSERT_HEXDIGEST, path) 
+        relroot = os.path.join(self._folder_fmt%l1, 
+                            self._folder_fmt%l2)
+        path = os.path.join(relroot, str(rowid))
+        c = con.execute(UPDATE_FILEPATH % (path, hexdigest)) 
+        dirpath = os.path.join(self._root, relroot)
+        if not os.path.exists(dirpath):
+            os.makedirs(dirpath)
         filepath = os.path.join(self._root, path)
         with open(filepath, 'wb') as f:
             f.write(data)
