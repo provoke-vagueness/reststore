@@ -3,6 +3,15 @@ import bottle
 import filestore
 
 
+class JSONError(bottle.HTTPResponse):
+    def __init__(self, status, message='', exception='Exception'):
+        body = json.dumps({'error': status,
+                            'exception': exception,
+                            'message': message})
+        bottle.HTTPResponse.__init__(self, status=status, 
+                header={'application':'json'}, body=body)
+
+
 @bottle.get('/<name>/<filehash>')
 def get(name, filehash):
     result = {}
@@ -12,8 +21,9 @@ def get(name, filehash):
         with open(filepath) as f:
             result['data'] = f.read()
     except KeyError:
-        bottle.abort(httplib.NOT_FOUND, '%s not found in %s' % \
-                        (filehash, name))
+        raise JSONError(httplib.NOT_FOUND, 
+                exception='KeyError',
+                message='%s not found in %s' % (filehash, name))
     return result
 
 
@@ -22,21 +32,21 @@ MAX_FILESIZE = 2 * 2**21
 @bottle.put('/<name>/<filehash>')
 def put(name, filehash):
     data = []
-    chunk = bottle.request.body.read(1048576)
+    chunk = bottle.request.body.read(MAX_FILESIZE)
     while chunk:
         data.append(chunk)
-        chunk = bottle.request.body.read(1048576)
+        chunk = bottle.request.body.read(MAX_FILESIZE)
     data = "".join(data)
     try:
         files = Files[name]
         files.put(data, expected=filehash)
     except ValueError as err:
-        bottle.abort(httplib.BAD_REQUEST, str(err))
-
+        raise JSONError(httplib.NOT_FOUND, 
+                exception='ValueError',
+                message=str(err))
 
 
 app = bottle.default_app()
-
 
 __help__ = """
 NAME filestore-webapp - Start the filestore webapp server
