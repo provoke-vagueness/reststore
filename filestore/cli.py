@@ -5,10 +5,10 @@ from getopt import getopt
 
 import filestore
 from filestore import config
-from filestore import webapp
 
 
 def command_web():
+    from filestore import webapp
     webapp.run()
     return 0
 
@@ -27,12 +27,13 @@ def command_get(FilesClass, hexdigest, outfile=sys.stdout):
 def command_put(FilesClass, filepath):
     try:
         with open(filepath, 'rb') as f:
-            data = f
+            data = f.read()
     except Exception as exc:
         print("Failed to read file %s - %s" % (filepath, exc), file=sys.stderr)
         return -1
     fs = FilesClass()
-    fs.put(data)
+    hexdigest = fs.put(data)
+    print("%s: %s > %s" % (hexdigest, filepath, fs[hexdigest]))
 
 
 defaults = {}
@@ -58,9 +59,7 @@ Commands:
 
         options
             --weboff
-                This flag will mean files are only retrieved from the local 
-                repository
-                
+                This flag forces access to a local repository only
             --uri=%(client_uri)s
                 The uri to the filestore web server.
 
@@ -73,9 +72,7 @@ Commands:
 
         options
             --weboff
-                This flag will mean files are only retrieved from the local 
-                repository
-                
+                This flag forces access to a local repository only
             --uri=%(client_uri)s
                 The uri to the filestore web server.
 
