@@ -12,7 +12,6 @@ def command_web():
     webapp.run()
     return 0
 
-
 def command_get(FilesClass, hexdigest, outfile=sys.stdout):
     fs = FilesClass()
     try:
@@ -22,7 +21,6 @@ def command_get(FilesClass, hexdigest, outfile=sys.stdout):
         print("Could not find a file for %s..." % hexdigest, file=sys.stderr)
         return -1
     return 0
-
 
 def command_put(FilesClass, filepaths):
     for filepath in filepaths:
@@ -36,7 +34,18 @@ def command_put(FilesClass, filepaths):
         fs = FilesClass()
         hexdigest = fs.put(data)
         print("%s: %s > %s" % (hexdigest, filepath, fs[hexdigest]))
+    return 0
 
+def command_list(FilesClass, select_from=0, select_to=-1):
+    fs = FilesClass()
+    for hexdigest in fs.select(select_from, select_to):
+        print(hexdigest)
+    return 0
+
+def command_len(FilesClass):
+    fs = FilesClass()
+    print(len(fs))
+    return 0
 
 defaults = {}
 for interface, kwargs in config.values.items():
@@ -57,11 +66,11 @@ Commands:
         attempt to read the file from the web filestore is made. 
     
         arguments 
-            HASH define the hash to read from the filestore
+            HASH define the hash to read from the filestore.
 
         options
             --weboff
-                This flag forces access to a local repository only
+                This flag forces access to a local repository only.
             --uri=%(client_uri)s
                 The uri to the filestore web server.
 
@@ -69,11 +78,31 @@ Commands:
         Put a file into the filestore.   
     
         arguments 
-            A path to the file to load into the filestore
+            A path to the file to load into the filestore.
 
         options
             --weboff
-                This flag forces access to a local repository only
+                This flag forces access to a local repository only.
+            --uri=%(client_uri)s
+                The uri to the filestore web server.
+
+    list [OPTIONS FILE-OPTIONS]
+        list out hexdigests found in the filestore.   
+    
+        options
+            --from=0
+            --to=-1
+            --weboff
+                This flag forces access to a local repository only.
+            --uri=%(client_uri)s
+                The uri to the filestore web server.
+
+    len [OPTIONS FILE-OPTIONS]
+        print out the number of files stored in the filestore.   
+    
+        options
+            --weboff
+                This flag forces access to a local repository only.
             --uri=%(client_uri)s
                 The uri to the filestore web server.
 
@@ -85,17 +114,17 @@ Commands:
 
         options
             --server=%(webapp_server)s
-                choose the server adapter to use.
+                Choose the server adapter to use.
             --debug=%(webapp_debug)s 
-                run in debug mode
+                Run in debug mode.
             --quiet=%(webapp_quiet)s
-                run in quite mode
+                Run in quite mode.
             --proxy_requests=%(webapp_proxy_requests)s
                 If True, this web app will proxy requests through to 
-                the authoritative server defined by the client uri
+                the authoritative server defined by the client uri.
             --uri=%(client_uri)s
                 This client uri points to the authoritative (or next level
-                up) filestore web app 
+                up) filestore web app.
 
 File options:
     --name=%(files_name)s
@@ -126,6 +155,7 @@ def main(args):
             'server=', 'debug=', 'quiet=', 'proxy_requests=',
             'name=', 'hash_function=', 'tune_size=', 'root=', 'assert_data_ok=',
             'uri=', 
+            'to=', 'from=',
             'weboff',
             ])
     except Exception as exc:
@@ -135,6 +165,7 @@ def main(args):
     webapp_config = config.values['webapp']
     files_config = config.values['files']
     client_config = config.values['client']
+    list_command = dict()
     FilesClass = filestore.FilesClient
     for opt, arg in opts:
         if opt in ['--server']:
@@ -163,6 +194,19 @@ def main(args):
 
         elif opt in ['--uri']:
             client_config['uri'] = arg
+
+        elif opt in ['--to']:
+            try:
+                list_command['select_to'] = int(arg)
+            except ValueError:
+                print("%s is not a valid int" % arg, file=sys.stderr)
+                return -1
+        elif opt in ['--from']:
+            try:
+                list_command['select_from'] = int(arg)
+            except ValueError:
+                print("%s is not a valid int" % arg, file=sys.stderr)
+                return -1
 
         elif opt in ['--weboff']:
             FilesClass = filestore.Files
@@ -195,6 +239,12 @@ def main(args):
     elif command == 'put':
         filepaths = args
         return command_put(FilesClass, filepaths)
+    
+    elif command == 'list':
+        return command_list(FilesClass, **list_command)
+    
+    elif command == 'len':
+        return command_len(FilesClass, **list_command)
 
     else:
         print("%s is not a valid command " % command, file=sys.stderr)
