@@ -22,6 +22,8 @@ INSERT_HEXDIGEST = "INSERT INTO files (hexdigest) values ('%s')"
 UPDATE_FILEPATH = "UPDATE files set filepath='%s' where hexdigest='%s'"
 SELECT_FILEPATH_HEXDIGEST = "\
 SELECT (hexdigest, filepath) from files where rowid=%s;"
+SELECT_DIGESTS_LIMIT = "SELECT hexdigest from files LIMIT %s OFFSET %s"
+SELECT_DIGESTS = "SELECT hexdigest from files"
 
 
 class DataError(Exception): pass
@@ -73,7 +75,7 @@ class Files:
         except KeyError:
             if d != self._get_default:
                 return d
-            raise
+            return None 
 
     def _assert_data_ok(self, hexdigest, filepath):
         if os.path.exists(filepath) is False:
@@ -135,18 +137,24 @@ class Files:
 
     def __iter__(self):
         con = sqlite3.connect(self._db)
-        c = con.execute("SELECT (hexdigest, filepath) from files")
+        c = con.execute(SELECT_DIGESTS)
         while True:
             rows = c.fetchmany()
             if not rows:
                 break
             for row in rows:
-                hexdigest, path = row
-                filepath = os.path.join(self._root, path)
-                if self._do_assert_data_ok:
-                    self._assert_data_ok(hexdigest, filepath)
-                yield (hexdigest, filepath)
+                hexdigest = row[0]
+                yield hexdigest
 
+    def select(self, a, b):
+        """select a range of hexdigest values to return"""
+        con = sqlite3.connect(self._db)
+        limit = b-a
+        offset = a
+        c = con.execute(SELECT_DIGESTS_LIMIT % (limit, offset))
+        rows = c.fethall()
+        hexdigests = [row[0] for row in rows]
+        return hexdigests
 
 
 
