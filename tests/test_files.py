@@ -22,6 +22,9 @@ class TestFiles(unittest.TestCase):
                 self.files.put,
                 'abcdef', hexdigest=digest)
 
+        self.assertTrue(digest in self.files)
+        self.assertFalse('asdfasdfa' in self.files)
+
         rdata = self.files[digest]
         self.assertRaises(KeyError,
                 self.files.__getitem__,
