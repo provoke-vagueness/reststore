@@ -65,7 +65,6 @@ Commands:
             --uri=%(client_uri)s
                 The uri to the filestore web server.
 
-
     put [OPTIONS FILE-OPTIONS] FILEPATH 
         Put a file into the filestore.   
     
@@ -77,7 +76,6 @@ Commands:
                 This flag forces access to a local repository only
             --uri=%(client_uri)s
                 The uri to the filestore web server.
-
 
     web [OPTIONS FILE-OPTIONS] [[HOST:][PORT]] 
         Run the RESTful web app.
