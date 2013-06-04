@@ -71,14 +71,11 @@ class Files:
             i = res[0]
         return i
     
-    _get_default = object()
-    def get(self, hexdigest, d=_get_default):
+    def get(self, hexdigest, d=None):
         try:
             return self[hexdigest]
         except KeyError:
-            if d != Files._get_default:
-                return d
-            return None 
+            return d
 
     def _assert_data_ok(self, hexdigest, filepath):
         if os.path.exists(filepath) is False:

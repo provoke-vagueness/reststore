@@ -51,14 +51,11 @@ class FilesClient(object):
         uri = "%s%s/length" % (self._uri, self._name)
         return self.request('get', uri)['result']
 
-    _get_default = object()
-    def get(self, hexdigest, d=_get_default):
+    def get(self, hexdigest, d=None):
         try:
             return self[hexdigest]
         except KeyError:
-            if d != FilesClient._get_default:
-                return d
-            return None
+            return d
 
     def __getitem__(self, hexdigest):
         # try and get the file back locally first
