@@ -20,8 +20,7 @@ values = dict(
                 port=8586,
                 server='wsgiref'),
             client=dict(
-                uri='http://127.0.0.1:8586/',
-                keep_local=True),
+                uri='http://127.0.0.1:8586/'),
         )
 
 
