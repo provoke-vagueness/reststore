@@ -2,9 +2,9 @@ from __future__ import print_function
 import sys
 from getopt import getopt
 
+import filestore
 from filestore import config
 from filestore import webapp
-from filestore import client
 
 
 def command_web():
@@ -13,11 +13,11 @@ def command_web():
 
 
 def command_get(hexdigest, outfile=sys.stdout):
-    fs = client.Files()
+    fs = filestore.FilesClient()
     try:
         outfile.write(fs[hexdigest])
     except KeyError:
-        print("Could not find a file for %s..." % hexdigest, file=sys.stderr)
+        print("Could not find a file for %s..." % (hexdigest, file=sys.stderr))
         return -1
     return 0
 
@@ -45,8 +45,6 @@ Commands:
         options
             --uri=%(client_uri)s
                 The uri to the filestore web server.
-            --keep_local=%(client_keep_local)s
-                Keep a copy of files locally 
 
     web [OPTIONS FILE-OPTIONS] [[HOST:][PORT]] 
         Run the RESTful web app.
@@ -92,7 +90,7 @@ def main(args):
         opts, args = getopt(args, '', [
             'server=', 'debug=', 'quiet=',
             'name=', 'hash_function=', 'tune_size=', 'root=', 'assert_data_ok=',
-            'uri=','keep_local=',
+            'uri=',
             ])
     except Exception as exc:
         print("Getopt error: %s" % (exc), file=sys.stderr)
@@ -126,8 +124,6 @@ def main(args):
 
         elif opt in ['--uri']:
             client_config['uri'] = arg
-        elif opt in ['--keep_local']:
-            client_config['keep_local'] =  arg.lower() != 'false'
 
     if command == 'web':
         if args:
