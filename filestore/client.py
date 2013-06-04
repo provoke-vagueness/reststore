@@ -47,11 +47,11 @@ class FilesClient(object):
         return self.request('get', uri)['length']
 
     _get_default = object()
-    def get(self, hexdigest, d=self._get_default):
+    def get(self, hexdigest, d=_get_default):
         try:
             return self[hexdigest]
         except KeyError:
-            if d != self._get_default:
+            if d != FilesClient._get_default:
                 return d
             return None
 
@@ -76,7 +76,7 @@ class FilesClient(object):
         self.request('put', uri, data=zlib.compress(data))
 
     def select(self, a, b):
-        uri = "%s%s/select/%s/%s" % self._uri, self._name, a, b)
+        uri = "%s%s/select/%s/%s" % (self._uri, self._name, a, b)
         hexdigests = self.request('get', uri)['hexdigests']
         return hexdigests
 
