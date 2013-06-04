@@ -1,5 +1,6 @@
 from __future__ import print_function
 import sys
+import os
 from getopt import getopt
 
 import filestore
@@ -21,6 +22,17 @@ def command_get(FilesClass, hexdigest, outfile=sys.stdout):
         print("Could not find a file for %s..." % hexdigest, file=sys.stderr)
         return -1
     return 0
+
+
+def command_put(FilesClass, filepath):
+    try:
+        with open(filepath, 'rb') as f:
+            data = f
+    except Exception as exc:
+        print("Failed to read file %s - %s" % (filepath, exc), file=sys.stderr)
+        return -1
+    fs = FilesClass()
+    fs.put(data)
 
 
 defaults = {}
@@ -54,10 +66,10 @@ Commands:
 
 
     put [OPTIONS FILE-OPTIONS] FILEPATH 
-        
+        Put a file into the filestore.   
     
         arguments 
-            HASH define the hash to read from the filestore
+            A path to the file to load into the filestore
 
         options
             --weboff
@@ -94,7 +106,6 @@ File options:
         Set the root for the filestore.
     --assert_data_ok=%(files_assert_data_ok)s
         Do extra checks when reading and writing data.
-  
 
 """ % defaults
 
@@ -176,6 +187,10 @@ def main(args):
     elif command == 'get':
         hexdigest = args[0]
         return command_get(FilesClass, hexdigest)
+    
+    elif command == 'put':
+        filepath = args[0]
+        return command_put(FilesClass, filepath)
 
     else:
         print("%s is not a valid command " % command, file=sys.stderr)
