@@ -96,11 +96,12 @@ class FilesClient(object):
 
     def __iter__(self):
         i = 0
-        hexdigests = self.select(i, i + 10000)
+        step = 100
+        hexdigests = self.select(i, i + step)
         while hexdigests:
             for hexdigest in hexdigests:
                 yield hexdigest
-            i += 1
-            hexdigests = self.select(i, i + 10000)
+            i += step
+            hexdigests = self.select(i, i + step)
 
             

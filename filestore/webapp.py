@@ -90,7 +90,7 @@ def get_length(name):
 
 @bottle.get('/<name>/select/<a>/<b>')
 @wrap_json_error
-def get_select(a, b):
+def get_select(name, a, b):
     if proxy_requests:
         files = filestore.FilesClient(name=name)
     else:
