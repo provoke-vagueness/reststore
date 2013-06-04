@@ -1,17 +1,21 @@
 import json 
 import requests 
+import zlib
 
-from filestore import files 
+import filestore
 from filestore import config
 
-class Files(object):
-    def __init__(self, name=config.values['files']['name'],
+class FilesClient(object):
+    def __init__(self, name=config.values['files']['name'], 
                        uri=config.values['client']['uri'],
-                       keep_local=config.values['client']['keep_local'],
                        requester=requests,
                        ):
+        """
+
+        """
+        self.requester = requester
+        self._files = filestore.Files(name=name)
         self._name = name
-        self._keep_local = keep_local
         if not uri.endswith('/'):
             uri += '/'
         self._uri = uri
@@ -49,20 +53,40 @@ class Files(object):
         except KeyError:
             if d != self._get_default:
                 return d
-            raise
+            return None
 
     def __getitem__(self, hexdigest):
         # try and get the file back locally first
         try:
-            fs = files.Files(name=self._name)
-            return fs[hexdigest]
+            return self._files[hexdigest]
         except KeyError:
             pass
-        uri = "%s%s/" % (self._uri, self._name, hexdigest)
-        return self.request('get', uri)['data']
+        # fetch data from server
+        uri = "%s%s/file/%s" % (self._uri, self._name, hexdigest)
+        data = zlib.decompress(self.request('get', uri)['data'])
+        self._files[hexdigest] = data
+        return self._files[hexdigest]
 
+    def __setitem__(self, hexdigest, data):
+        self.put(data, hexdigest=hexdigest)
         
+    def put(self, data, hexdigest=None):
+        self._files[hexdigest] = data
+        uri = "%s%s/file/%s" % (self._uri, self._name, hexdigest)
+        self.request('put', uri, data=zlib.compress(data))
 
-    
-    
+    def select(self, a, b):
+        uri = "%s%s/select/%s/%s" % self._uri, self._name, a, b)
+        hexdigests = self.request('get', uri)['hexdigests']
+        return hexdigests
 
+    def __iter__(self):
+        i = 0
+        hexdigests = self.select(i, i + 10000)
+        while hexdigests:
+            for hexdigest in hexdigests:
+                yield hexdigest
+            i += 1
+            hexdigests = self.select(i, i + 10000)
+
+            
