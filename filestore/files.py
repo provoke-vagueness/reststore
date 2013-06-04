@@ -116,7 +116,7 @@ class Files:
         except (KeyError, DataError):
             pass
         else:
-            return
+            return hexdigest
         #create our entry
         con = sqlite3.connect(self._db)
         c = con.execute(INSERT_HEXDIGEST % hexdigest) 
@@ -134,6 +134,7 @@ class Files:
         with open(filepath, 'wb') as f:
             f.write(data)
         con.commit()
+        return hexdigest
 
     def __iter__(self):
         con = sqlite3.connect(self._db)
