@@ -32,7 +32,7 @@ class DataError(Exception): pass
 class Files:
     def __init__(self, name=config.values['files']['name'], 
                    files_root=config.values['files']['root'],
-                   hash_func=config.values['files']['hash_func'],
+                   hash_func=config.values['files']['hash_function'],
                    tune_size=config.values['files']['tune_size'],
                    assert_data_ok=config.values['files']['assert_data_ok']):
         """
@@ -41,7 +41,7 @@ class Files:
         if os.path.sep in name or '..' in name:
             raise ValueError('name can not contain .. or %s' % os.path.sep)
         self.hash_func = getattr(hashlib, hash_func)
-        self.hash_len = len(hash_func('').hexdigest())
+        self.hash_len = len(self.hash_func('').hexdigest())
         self._root = os.path.join(files_root, name)
         #create our db if it doesn't exist already
         self._db = os.path.join(self._root, 'files.db')
@@ -69,11 +69,11 @@ class Files:
         return i
     
     _get_default = object()
-    def get(self, hexdigest, d=self._get_default):
+    def get(self, hexdigest, d=_get_default):
         try:
             return self[hexdigest]
         except KeyError:
-            if d != self._get_default:
+            if d != Files._get_default:
                 return d
             return None 
 
