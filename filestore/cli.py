@@ -12,12 +12,13 @@ def command_web():
     return 0
 
 
-def command_get(hexdigest, outfile=sys.stdout):
-    fs = filestore.FilesClient()
+def command_get(FilesClass, hexdigest, outfile=sys.stdout):
+    fs = FilesClass()
     try:
-        outfile.write(fs[hexdigest])
+        with open(fs[hexdigest], 'rb') as f:
+            outfile.write(f.read())
     except KeyError:
-        print("Could not find a file for %s..." % (hexdigest, file=sys.stderr))
+        print("Could not find a file for %s..." % hexdigest, file=sys.stderr)
         return -1
     return 0
 
@@ -36,15 +37,36 @@ SYNOPSIS
 Commands:
     
     get [OPTIONS FILE-OPTIONS] [HEXDIGEST] > stdout
-        Attempt to retrieve a file for the HEXDIGEST from the local followed 
-        by the remote filestore then pipe it out to stdout.
+        Attempt to retrieve a file and write it out to stdout.  A check is
+        made in the local filestore first, if the file is in available, an
+        attempt to read the file from the web filestore is made. 
     
         arguments 
             HASH define the hash to read from the filestore
 
         options
+            --weboff
+                This flag will mean files are only retrieved from the local 
+                repository
+                
             --uri=%(client_uri)s
                 The uri to the filestore web server.
+
+
+    put [OPTIONS FILE-OPTIONS] FILEPATH 
+        
+    
+        arguments 
+            HASH define the hash to read from the filestore
+
+        options
+            --weboff
+                This flag will mean files are only retrieved from the local 
+                repository
+                
+            --uri=%(client_uri)s
+                The uri to the filestore web server.
+
 
     web [OPTIONS FILE-OPTIONS] [[HOST:][PORT]] 
         Run the RESTful web app.
@@ -55,9 +77,9 @@ Commands:
         options
             --server=%(webapp_server)s
                 choose the server adapter to use.
-            --debug defaults to %(webapp_debug)s 
+            --debug=%(webapp_debug)s 
                 run in debug mode
-            --quiet defaults to %(webapp_quiet)s
+            --quiet=%(webapp_quiet)s
                 run in quite mode
 
 File options:
@@ -70,7 +92,7 @@ File options:
         Set the approximate size the filestore may grow up to.
     --root=%(files_root)s
         Set the root for the filestore.
-    --assert_data_ok=%(assert_data_ok)s
+    --assert_data_ok=%(files_assert_data_ok)s
         Do extra checks when reading and writing data.
   
 
@@ -90,7 +112,8 @@ def main(args):
         opts, args = getopt(args, '', [
             'server=', 'debug=', 'quiet=',
             'name=', 'hash_function=', 'tune_size=', 'root=', 'assert_data_ok=',
-            'uri=',
+            'uri=', 
+            'weboff',
             ])
     except Exception as exc:
         print("Getopt error: %s" % (exc), file=sys.stderr)
@@ -99,6 +122,7 @@ def main(args):
     webapp_config = config.values['webapp']
     files_config = config.values['files']
     client_config = config.values['client']
+    FilesClass = filestore.FilesClient
     for opt, arg in opts:
         if opt in ['--server']:
             webapp_config['server'] = arg
@@ -125,6 +149,9 @@ def main(args):
         elif opt in ['--uri']:
             client_config['uri'] = arg
 
+        elif opt in ['--weboff']:
+            FilesClass = filestore.Files
+
     if command == 'web':
         if args:
             hostport = args[0]
@@ -148,7 +175,7 @@ def main(args):
 
     elif command == 'get':
         hexdigest = args[0]
-        return command_get(hexdigest)
+        return command_get(FilesClass, hexdigest)
 
     else:
         print("%s is not a valid command " % command, file=sys.stderr)
