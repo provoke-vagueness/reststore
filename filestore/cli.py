@@ -24,16 +24,18 @@ def command_get(FilesClass, hexdigest, outfile=sys.stdout):
     return 0
 
 
-def command_put(FilesClass, filepath):
-    try:
-        with open(filepath, 'rb') as f:
-            data = f.read()
-    except Exception as exc:
-        print("Failed to read file %s - %s" % (filepath, exc), file=sys.stderr)
-        return -1
-    fs = FilesClass()
-    hexdigest = fs.put(data)
-    print("%s: %s > %s" % (hexdigest, filepath, fs[hexdigest]))
+def command_put(FilesClass, filepaths):
+    for filepath in filepaths:
+        try:
+            with open(filepath, 'rb') as f:
+                data = f.read()
+        except Exception as exc:
+            print("Failed to read file %s - %s" % (filepath, exc), 
+                        file=sys.stderr)
+            return -1
+        fs = FilesClass()
+        hexdigest = fs.put(data)
+        print("%s: %s > %s" % (hexdigest, filepath, fs[hexdigest]))
 
 
 defaults = {}
@@ -186,8 +188,8 @@ def main(args):
         return command_get(FilesClass, hexdigest)
     
     elif command == 'put':
-        filepath = args[0]
-        return command_put(FilesClass, filepath)
+        filepaths = args
+        return command_put(FilesClass, filepaths)
 
     else:
         print("%s is not a valid command " % command, file=sys.stderr)
