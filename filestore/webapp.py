@@ -10,6 +10,7 @@ import json
 import filestore
 from filestore import config
 
+proxy_requests = False
 
 class JSONError(bottle.HTTPResponse):
     def __init__(self, status, message='', exception='Exception'):
@@ -43,7 +44,10 @@ def wrap_json_error(f):
 @bottle.get('/<name>/file/<hexdigest>')
 @wrap_json_error
 def get(name, hexdigest):
-    files = filestore.Files(name=name)
+    if proxy_requests:
+        files = filestore.FilesClient(name=name)
+    else:
+        files = filestore.Files(name=name)
     try:
         filepath = files[hexdigest]
         with open(filepath) as f:
@@ -55,11 +59,14 @@ def get(name, hexdigest):
     return dict(result=data)
 
 
-MAX_FILESIZE = 2 * 2**21
+MAX_FILESIZE = 100 * 2**21
 @bottle.put('/<name>/file/<hexdigest>')
 @wrap_json_error
 def put(name, hexdigest):
-    files = filestore.Files(name=name)
+    if proxy_requests:
+        files = filestore.FilesClient(name=name)
+    else:
+        files = filestore.Files(name=name)
     data = bottle.request.body.read(MAX_FILESIZE)
     data = zlib.decompress(base64.decodestring(data))
     try:
@@ -74,14 +81,20 @@ def put(name, hexdigest):
 @bottle.get('/<name>/length')
 @wrap_json_error
 def get_length(name):
-    files = filestore.Files(name=name)
+    if proxy_requests:
+        files = filestore.FilesClient(name=name)
+    else:
+        files = filestore.Files(name=name)
     return dict(result=len(files))
 
 
 @bottle.get('/<name>/select/<a>/<b>')
 @wrap_json_error
 def get_select(a, b):
-    files = filestore.Files(name=name)
+    if proxy_requests:
+        files = filestore.FilesClient(name=name)
+    else:
+        files = filestore.Files(name=name)
     hexdigests = files.select(int(a), int(b))
     return dict(result=hexdigests)
 
@@ -89,13 +102,24 @@ def get_select(a, b):
 @bottle.get('/<name>/contains/<hexdigest>')
 @wrap_json_error
 def contains(name, hexdigest):
-    files = filestore.Files(name=name)
+    if proxy_requests:
+        files = filestore.FilesClient(name=name)
+    else:
+        files = filestore.Files(name=name)
     return dict(result=hexdigest in files)
 
 
 app = bottle.default_app()
 def run():
-    bottle.run(app=app, **config.values['webapp'])
+    global proxy_requests
+    webapp_config = config.values['webapp']
+    bottle_kwargs = dict(debug=webapp_config['debug'],
+                       quiet=webapp_config['quiet'],
+                       host=webapp_config['host'],
+                       port=webapp_config['port'],
+                       server=webapp_config['server'])
+    proxy_requests = config.values['webapp']['proxy_requests']
+    bottle.run(app=app, **bottle_kwargs)
 
 
 

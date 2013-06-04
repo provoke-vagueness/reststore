@@ -92,9 +92,14 @@ Commands:
                 run in debug mode
             --quiet=%(webapp_quiet)s
                 run in quite mode
+            --proxy_requests=%(webapp_proxy_requests)s
+                If True, this web app will proxy requests through to 
+                the authoritative server defined by the client uri
+            --uri=%(client_uri)s
+                This client uri points to the authoritative (or next level
+                up) filestore web app 
 
 File options:
-
     --name=%(files_name)s
         Set the default filestore name (i.e. domain or realm) 
     --hash_function=%(files_hash_function)s
@@ -120,7 +125,7 @@ def main(args):
 
     try:
         opts, args = getopt(args, '', [
-            'server=', 'debug=', 'quiet=',
+            'server=', 'debug=', 'quiet=', 'proxy_requests=',
             'name=', 'hash_function=', 'tune_size=', 'root=', 'assert_data_ok=',
             'uri=', 
             'weboff',
@@ -140,6 +145,8 @@ def main(args):
             webapp_config['quite'] = arg.lower() != 'false'
         elif opt in ['--debug']:
             webapp_config['debug'] = arg.lower() != 'false'
+        elif opt in ['--proxy_requests']:
+            webapp_config['proxy_requests'] = arg.lower() != 'false'
 
         elif opt in ['--name']:
             files_config['name'] = arg
