@@ -68,7 +68,7 @@ class Files:
         if res is None:
             i = 0
         else:
-            i,_ = res
+            i = res[0]
         return i
     
     _get_default = object()
@@ -163,7 +163,7 @@ class Files:
         limit = b-a
         offset = a
         c = con.execute(SELECT_DIGESTS_LIMIT % (limit, offset))
-        rows = c.fethall()
+        rows = c.fetchall()
         hexdigests = [row[0] for row in rows]
         return hexdigests
 
