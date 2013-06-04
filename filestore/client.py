@@ -96,7 +96,7 @@ class FilesClient(object):
 
     def __iter__(self):
         i = 0
-        step = 100
+        step = 100000
         hexdigests = self.select(i, i + step)
         while hexdigests:
             for hexdigest in hexdigests:
