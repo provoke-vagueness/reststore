@@ -30,14 +30,17 @@ class DataError(Exception): pass
 
 
 class Files:
-    def __init__(self, name=config.values['files']['name'], 
-                   files_root=config.values['files']['root'],
-                   hash_func=config.values['files']['hash_function'],
-                   tune_size=config.values['files']['tune_size'],
-                   assert_data_ok=config.values['files']['assert_data_ok']):
+    def __init__(self, name=None, files_root=None, hash_func=None,
+                 tune_size=None, assert_data_ok=None):
         """
         
         """
+        files_config = config.values['files']
+        name = name or files_config['name']
+        files_root = files_root or files_config['root']
+        hash_func = hash_func or files_config['hash_function']
+        tune_size = tune_size or files_config['tune_size']
+        assert_data_ok = assert_data_ok or files_config['assert_data_ok']
         if os.path.sep in name or '..' in name:
             raise ValueError('name can not contain .. or %s' % os.path.sep)
         self.hash_func = getattr(hashlib, hash_func)
@@ -97,6 +100,13 @@ class Files:
         if self._do_assert_data_ok:
             self._assert_data_ok(hexdigest, filepath)          
         return filepath
+
+    def __contains__(self, hexdigest):
+        try:
+            self[hexdigest]
+        except Exception:
+            return False
+        return True
 
     def __setitem__(self, hexdigest, data):
         self.put(data, hexdigest=hexdigest)
