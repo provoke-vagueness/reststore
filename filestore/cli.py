@@ -64,7 +64,7 @@ File options:
 
     --name=%(files_name)s
         Set the default filestore name (i.e. domain or realm) 
-    --hash_func=%(files_hash_function)s
+    --hash_function=%(files_hash_function)s
         Set the hash function to be used
     --tune_size=%(files_tune_size)s
         Set the approximate size the filestore may grow up to.
