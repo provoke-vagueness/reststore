@@ -160,6 +160,12 @@ class Files:
     def select(self, a, b):
         """select a range of hexdigest values to return"""
         con = sqlite3.connect(self._db)
+        if a < 0:
+            a = len(self) + a + 1
+        if b < 0:
+            b = len(self) + b + 1
+        if b < a:
+            a, b = b, a
         limit = b-a
         offset = a
         c = con.execute(SELECT_DIGESTS_LIMIT % (limit, offset))
