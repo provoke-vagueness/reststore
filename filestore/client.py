@@ -1,18 +1,23 @@
+import sys
 import json 
 import requests 
 import zlib
+import base64
+if sys.version_info[0] < 3:
+    builtins = __builtins__
+else:
+    import builtins 
 
 import filestore
 from filestore import config
 
 class FilesClient(object):
-    def __init__(self, name=config.values['files']['name'], 
-                       uri=config.values['client']['uri'],
-                       requester=requests,
-                       ):
+    def __init__(self, name=None, uri=None, requester=requests):
         """
 
         """
+        name = name or config.values['files']['name']
+        uri = uri or config.values['client']['uri']
         self.requester = requester
         self._files = filestore.Files(name=name)
         self._name = name
@@ -44,7 +49,7 @@ class FilesClient(object):
 
     def __len__(self):
         uri = "%s%s/length" % (self._uri, self._name)
-        return self.request('get', uri)['length']
+        return self.request('get', uri)['result']
 
     _get_default = object()
     def get(self, hexdigest, d=_get_default):
@@ -63,21 +68,30 @@ class FilesClient(object):
             pass
         # fetch data from server
         uri = "%s%s/file/%s" % (self._uri, self._name, hexdigest)
-        data = zlib.decompress(self.request('get', uri)['data'])
+        data = self.request('get', uri)['result']
+        data = zlib.decompress(base64.decodestring(data))
         self._files[hexdigest] = data
         return self._files[hexdigest]
+
+    def __contains__(self, hexdigest):
+        uri = "%s%s/contains/%s" % (self._uri, self._name, hexdigest)
+        return self.request('get', uri)['result']
 
     def __setitem__(self, hexdigest, data):
         self.put(data, hexdigest=hexdigest)
         
     def put(self, data, hexdigest=None):
-        self._files[hexdigest] = data
+        hexdigest = self._files.put(data, hexdigest=hexdigest)
+        if hexdigest in self:
+            return hexdigest 
         uri = "%s%s/file/%s" % (self._uri, self._name, hexdigest)
-        self.request('put', uri, data=zlib.compress(data))
+        data = base64.encodestring(zlib.compress(data))
+        self.request('put', uri, data=data)
+        return hexdigest
 
     def select(self, a, b):
         uri = "%s%s/select/%s/%s" % (self._uri, self._name, a, b)
-        hexdigests = self.request('get', uri)['hexdigests']
+        hexdigests = self.request('get', uri)['result']
         return hexdigests
 
     def __iter__(self):

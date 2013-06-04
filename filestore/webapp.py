@@ -3,6 +3,9 @@ import inspect
 import traceback
 import functools
 import zlib
+import base64
+import httplib
+import json
 
 import filestore
 from filestore import config
@@ -34,55 +37,61 @@ def wrap_json_error(f):
             raise JSONError(httplib.INTERNAL_SERVER_ERROR,
                     exception=exc,
                     message=traceback.format_exc())
+    return wrapper
 
         
 @bottle.get('/<name>/file/<hexdigest>')
 @wrap_json_error
 def get(name, hexdigest):
     files = filestore.Files(name=name)
-    result = {}
     try:
         filepath = files[hexdigest]
         with open(filepath) as f:
-            result['data'] = zlib.compress(f.read())
+            data = base64.encodestring(zlib.compress(f.read()))
     except KeyError:
         raise JSONError(httplib.NOT_FOUND, 
                 exception='KeyError',
                 message='%s not found in %s' % (hexdigest, name))
-    return result
+    return dict(result=data)
 
 
-DEFAULT_CHUNK_SIZE = 2 * 2**21
+MAX_FILESIZE = 2 * 2**21
 @bottle.put('/<name>/file/<hexdigest>')
 @wrap_json_error
 def put(name, hexdigest):
     files = filestore.Files(name=name)
-    data = []
-    chunk = bottle.request.body.read(DEFAULT_CHUNK_SIZE)
-    while chunk:
-        data.append(chunk)
-        chunk = bottle.request.body.read(DEFAULT_CHUNK_SIZE)
-    data = zlib.decompress("".join(data))
+    data = bottle.request.body.read(MAX_FILESIZE)
+    data = zlib.decompress(base64.decodestring(data))
     try:
-        files.put(data, expected=hexdigest)
+        files.put(data, hexdigest=hexdigest)
     except ValueError as err:
         raise JSONError(httplib.NOT_FOUND, 
                 exception='ValueError',
                 message=str(err))
-    return {}
+    return dict(result=None)
+
 
 @bottle.get('/<name>/length')
 @wrap_json_error
 def get_length(name):
     files = filestore.Files(name=name)
-    return dict(length=len(files))
+    return dict(result=len(files))
+
 
 @bottle.get('/<name>/select/<a>/<b>')
 @wrap_json_error
 def get_select(a, b):
     files = filestore.Files(name=name)
     hexdigests = files.select(int(a), int(b))
-    return dict(hexdigests=hexdigests)
+    return dict(result=hexdigests)
+
+
+@bottle.get('/<name>/contains/<hexdigest>')
+@wrap_json_error
+def contains(name, hexdigest):
+    files = filestore.Files(name=name)
+    return dict(result=hexdigest in files)
+
 
 app = bottle.default_app()
 def run():
