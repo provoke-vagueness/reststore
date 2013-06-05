@@ -6,7 +6,7 @@ import sqlite3
 import math
 import random
 
-from filestore import config
+from reststore import config
 
 
 FILES_TABLE = "\

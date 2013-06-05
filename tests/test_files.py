@@ -1,15 +1,15 @@
 import unittest
 import shutil
 
-import filestore
+import reststore
 
 
 class TestFiles(unittest.TestCase):
 
     def setUp(self):
-        t = filestore.Files(name='test_filestore')
+        t = reststore.Files(name='test_reststore')
         shutil.rmtree(t._root)
-        t = filestore.Files(name='test_filestore')
+        t = reststore.Files(name='test_reststore')
         self.files = t
 
     def test_set_and_get(self):

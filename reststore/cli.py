@@ -3,12 +3,12 @@ import sys
 import os
 from getopt import getopt
 
-import filestore
-from filestore import config
+import reststore
+from reststore import config
 
 
 def command_web():
-    from filestore import webapp
+    from reststore import webapp
     webapp.run()
     return 0
 
@@ -53,41 +53,41 @@ for interface, kwargs in config.values.items():
     defaults.update(c)
 
 __help__ = """
-NAME filestore - control over the filestore 
+NAME reststore - control over the reststore 
 
 SYNOPSIS
-    filestore [COMMAND]
+    reststore [COMMAND]
 
 Commands:
     
     get [OPTIONS FILE-OPTIONS] [HEXDIGEST] > stdout
         Attempt to retrieve a file and write it out to stdout.  A check is
-        made in the local filestore first, if the file is in available, an
-        attempt to read the file from the web filestore is made. 
+        made in the local reststore first, if the file is in available, an
+        attempt to read the file from the web reststore is made. 
     
         arguments 
-            HASH define the hash to read from the filestore.
+            HASH define the hash to read from the reststore.
 
         options
             --weboff
                 This flag forces access to a local repository only.
             --uri=%(client_uri)s
-                The uri to the filestore web server.
+                The uri to the reststore web server.
 
     put [OPTIONS FILE-OPTIONS] FILEPATH 
-        Put a file into the filestore.   
+        Put a file into the reststore.   
     
         arguments 
-            A path to the file to load into the filestore.
+            A path to the file to load into the reststore.
 
         options
             --weboff
                 This flag forces access to a local repository only.
             --uri=%(client_uri)s
-                The uri to the filestore web server.
+                The uri to the reststore web server.
 
     list [OPTIONS FILE-OPTIONS]
-        list out hexdigests found in the filestore.   
+        list out hexdigests found in the reststore.   
     
         options
             --from=0
@@ -95,16 +95,16 @@ Commands:
             --weboff
                 This flag forces access to a local repository only.
             --uri=%(client_uri)s
-                The uri to the filestore web server.
+                The uri to the reststore web server.
 
     len [OPTIONS FILE-OPTIONS]
-        print out the number of files stored in the filestore.   
+        print out the number of files stored in the reststore.   
     
         options
             --weboff
                 This flag forces access to a local repository only.
             --uri=%(client_uri)s
-                The uri to the filestore web server.
+                The uri to the reststore web server.
 
     web [OPTIONS FILE-OPTIONS] [[HOST:][PORT]] 
         Run the RESTful web app.
@@ -124,17 +124,17 @@ Commands:
                 the authoritative server defined by the client uri.
             --uri=%(client_uri)s
                 This client uri points to the authoritative (or next level
-                up) filestore web app.
+                up) reststore web app.
 
 File options:
     --name=%(files_name)s
-        Set the default filestore name (i.e. domain or realm) 
+        Set the default reststore name (i.e. domain or realm) 
     --hash_function=%(files_hash_function)s
         Set the hash function to be used
     --tune_size=%(files_tune_size)s
-        Set the approximate size the filestore may grow up to.
+        Set the approximate size the reststore may grow up to.
     --root=%(files_root)s
-        Set the root for the filestore.
+        Set the root for the reststore.
     --assert_data_ok=%(files_assert_data_ok)s
         Do extra checks when reading and writing data.
 
@@ -166,7 +166,7 @@ def main(args):
     files_config = config.values['files']
     client_config = config.values['client']
     list_command = dict()
-    FilesClass = filestore.FilesClient
+    FilesClass = reststore.FilesClient
     for opt, arg in opts:
         if opt in ['--server']:
             webapp_config['server'] = arg
@@ -209,7 +209,7 @@ def main(args):
                 return -1
 
         elif opt in ['--weboff']:
-            FilesClass = filestore.Files
+            FilesClass = reststore.Files
 
     if command == 'web':
         if args:

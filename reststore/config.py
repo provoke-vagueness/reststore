@@ -5,7 +5,7 @@ import hashlib
 
 
 # Define our defaults.
-project = 'filestore'
+project = 'reststore'
 values = dict(
             files=dict(
                 name='files',
@@ -30,8 +30,8 @@ def _update_values(new):
         values[interface].update(kwargs)
 
 # Load the system configuration file 
-if os.path.exists('/etc/filestore.yaml'):
-    with open('/etc/filestore.yaml', 'r') as f:
+if os.path.exists('/etc/reststore.yaml'):
+    with open('/etc/reststore.yaml', 'r') as f:
         _update_values(yaml.load(f))
 
 

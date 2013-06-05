@@ -7,8 +7,8 @@ import base64
 import httplib
 import json
 
-import filestore
-from filestore import config
+import reststore
+from reststore import config
 
 proxy_requests = False
 
@@ -45,9 +45,9 @@ def wrap_json_error(f):
 @wrap_json_error
 def get(name, hexdigest):
     if proxy_requests:
-        files = filestore.FilesClient(name=name)
+        files = reststore.FilesClient(name=name)
     else:
-        files = filestore.Files(name=name)
+        files = reststore.Files(name=name)
     try:
         filepath = files[hexdigest]
         with open(filepath) as f:
@@ -64,9 +64,9 @@ MAX_FILESIZE = 100 * 2**21
 @wrap_json_error
 def put(name, hexdigest):
     if proxy_requests:
-        files = filestore.FilesClient(name=name)
+        files = reststore.FilesClient(name=name)
     else:
-        files = filestore.Files(name=name)
+        files = reststore.Files(name=name)
     data = bottle.request.body.read(MAX_FILESIZE)
     data = zlib.decompress(base64.decodestring(data))
     try:
@@ -82,9 +82,9 @@ def put(name, hexdigest):
 @wrap_json_error
 def get_length(name):
     if proxy_requests:
-        files = filestore.FilesClient(name=name)
+        files = reststore.FilesClient(name=name)
     else:
-        files = filestore.Files(name=name)
+        files = reststore.Files(name=name)
     return dict(result=len(files))
 
 
@@ -92,9 +92,9 @@ def get_length(name):
 @wrap_json_error
 def get_select(name, a, b):
     if proxy_requests:
-        files = filestore.FilesClient(name=name)
+        files = reststore.FilesClient(name=name)
     else:
-        files = filestore.Files(name=name)
+        files = reststore.Files(name=name)
     hexdigests = files.select(int(a), int(b))
     return dict(result=hexdigests)
 
@@ -103,9 +103,9 @@ def get_select(name, a, b):
 @wrap_json_error
 def contains(name, hexdigest):
     if proxy_requests:
-        files = filestore.FilesClient(name=name)
+        files = reststore.FilesClient(name=name)
     else:
-        files = filestore.Files(name=name)
+        files = reststore.Files(name=name)
     return dict(result=hexdigest in files)
 
 

@@ -13,7 +13,7 @@ install_requires = ["bottle>=0.11",
                     "requests>=1.1.0",
                     "pyyaml>=0.0"]
 
-def load_version(filename='./filestore/version.py'):
+def load_version(filename='./reststore/version.py'):
     """Parse a __version__ number from a source file"""
     with open(filename) as source:
         text = source.read()
@@ -25,12 +25,12 @@ def load_version(filename='./filestore/version.py'):
         return version
 
 setup(
-    name="filestore",
+    name="reststore",
     version=load_version(),
-    packages=["filestore"],
+    packages=["reststore"],
     zip_safe=False,
     author="Michael Dorman",
-    author_email="mjdorma+filestore@gmail.com",
+    author_email="mjdorma+reststore@gmail.com",
     url="",
     description="Light weight file store with a RESTful web API.",
     long_description=open('README.rst').read(),
@@ -38,7 +38,7 @@ setup(
     install_requires = install_requires,
     entry_points={
         'console_scripts': [
-            'filestore = filestore.cli:entry',
+            'reststore = reststore.cli:entry',
             ]
     },
     platforms=['cygwin', 'win', 'linux'],
