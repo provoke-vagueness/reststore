@@ -32,8 +32,29 @@ class DataError(Exception): pass
 class Files:
     def __init__(self, name=None, files_root=None, hash_func=None,
                  tune_size=None, assert_data_ok=None):
-        """
-        
+        """Create a Files interface object.  
+
+        This object is responsible for putting and getting data from the files
+        data store.  
+
+        Optional keyword arguments:
+            name - The name applied to this data store.  This name will be
+                used as the root folder name for accessing the data store.
+            files_root - This is the root folder in which data stores are
+                created.
+            hash_func - The string value name for the hashing algorithm to
+                apply to a specific 'name' data store. The name of the hashing
+                algorithm needs to exist in Python's default hashlib module. 
+            tune_size - This value is used to tune an optimised shape of the
+                data store on disk.  It is best to set this value to a value
+                you expect the datastore could grow to.
+            assert_data_ok - If this flag is True, additional checks are made
+                when data is accessed from disk.  This may not be desirable as
+                it adds additional checks which may cause undesirable overheads
+                in execution.        
+
+        Note: Default values for the parameters in this of this constructor
+              are defined and set in reststore.config
         """
         files_config = config.values['files']
         name = name or files_config['name']
@@ -72,6 +93,7 @@ class Files:
         return i
     
     def get(self, hexdigest, d=None):
+        """Get a filepath for the data corresponding to the hexdigest"""
         try:
             return self[hexdigest]
         except KeyError:
@@ -109,6 +131,7 @@ class Files:
         self.put(data, hexdigest=hexdigest)
     
     def put(self, data, hexdigest=None):
+        """Puts data into the data store. Returns the hexdigest for the data""" 
         if hexdigest is None:
             hexdigest = self.hash_func(data).hexdigest()
         else:
@@ -155,7 +178,20 @@ class Files:
                 yield hexdigest
 
     def select(self, a, b):
-        """select a range of hexdigest values to return"""
+        """Select a range of hexdigest values to return.
+        
+        This function provides a way to "slice" the data entered into this
+        store.  
+        Examples:
+            select(-2, -1) return the hexdigest for the last data entered into
+                           the store.
+            select(0, 1)   return the first hexdigest for the first data
+                           entered, 
+            select(10,-10) will return all of the hexdigests between the 10th
+                           inserted and the 10th last inserted data.
+
+        Return a list of hexidigests
+        """
         con = sqlite3.connect(self._db)
         if a < 0:
             a = len(self) + a + 1
