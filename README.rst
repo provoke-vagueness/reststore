@@ -1,13 +1,13 @@
 Introduction to reststore 
-**********************
+*************************
 
 Why reststore?
 
  reststore is used by me and my friends as a simple way to share and store
  samples of malware.  Large volumes of files are what we're in it for.  We have
- demonstrated just about every possible way one can destroy a filesystem.  I
- guess I should write a guide on how things tend to go bad for filesystem when
- you put millions of objects on them... 
+ demonstrated just about every possible way one can destroy a filesystem.  One
+ day I'll write a guide on how things go bad when trying to store millions of
+ files... 
  
 What is reststore:
 
@@ -140,7 +140,7 @@ reststore::
              --uri=http://127.0.0.1:8586/
                  The uri to the reststore web server.
 
-     put [OPTIONS FILE-OPTIONS] FILEPATH 
+     put [OPTIONS FILE-OPTIONS] FILEPATH(s) 
          Put a file into the reststore.   
      
          arguments 
@@ -209,7 +209,7 @@ reststore::
 Issues
 ======
 
-Source code for *pyvbox* is hosted on `GitHub
+Source code for *reststore* is hosted on `GitHub
 <https://github.com/provoke-vagueness/reststore>`_. 
 Please file `bug reports <https://github.com/provoke-vagueness/reststore/issues>`_
 with GitHub's issues system.

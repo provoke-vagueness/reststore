@@ -74,7 +74,7 @@ Commands:
             --uri=%(client_uri)s
                 The uri to the reststore web server.
 
-    put [OPTIONS FILE-OPTIONS] FILEPATH 
+    put [OPTIONS FILE-OPTIONS] FILEPATH(s) 
         Put a file into the reststore.   
     
         arguments 
