@@ -8,8 +8,8 @@ if sys.version_info[0] < 3:
 else:
     import builtins 
 
-import filestore
-from filestore import config
+import reststore
+from reststore import config
 
 class FilesClient(object):
     def __init__(self, name=None, uri=None, requester=requests):
@@ -19,7 +19,7 @@ class FilesClient(object):
         name = name or config.values['files']['name']
         uri = uri or config.values['client']['uri']
         self.requester = requester
-        self._files = filestore.Files(name=name)
+        self._files = reststore.Files(name=name)
         self._name = name
         if not uri.endswith('/'):
             uri += '/'
