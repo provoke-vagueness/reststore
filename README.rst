@@ -6,7 +6,9 @@ Why reststore?
  reststore is used by my friends and I as a simple way to share and store
  samples of malware.  Large volumes of files are what we're in it for.  The
  advantage we get from using reststore is in its ability to return slices 
- of hashes based on chronological ordering of data insert. 
+ of hashes based on chronological ordering of data insert.  It implements
+ a simple yet powerful fetch, cache, and store pattern that makes handling
+ large volumes of data a trivial problem. 
   
 What is reststore:
 
@@ -18,9 +20,10 @@ What is reststore:
 
 What's in reststore: 
 
- * A Python dictionary type Files or FilesClient object for seamless access
-   of data via the configured hashing algorithm.
- * A set of command line operations to get put and list data.
+ * A simple interface called Files which gives full control over and access
+   to reststore's capabilities. 
+ * Flexible configuration to support more complex deployments of reststore.
+ * A set of command line operations to get, put, and list data.
  * A RESTful webapi so data can be accessed in a client agnostic manner. 
 
 
