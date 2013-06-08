@@ -125,52 +125,42 @@ reststore::
 
  Commands:
      
-     get [OPTIONS FILE-OPTIONS] [HEXDIGEST] > stdout
+     get [FILE-OPTIONS] [HEXDIGEST] > stdout
          Attempt to retrieve a file and write it out to stdout.  A check is
          made in the local reststore first, if the file is in available, an
          attempt to read the file from the web reststore is made. 
      
          arguments 
-             HASH define the hash to read from the reststore.
+             Use HEXDIGEST to define hash to read from the reststore.
 
-         options
-             --weboff
-                 This flag forces access to a local repository only.
-             --uri=http://127.0.0.1:8586/
-                 The uri to the reststore web server.
-
-     put [OPTIONS FILE-OPTIONS] FILEPATH(s) 
+     put [FILE-OPTIONS] FILEPATH(s) 
          Put a file into the reststore.   
      
          arguments 
-             A path to the file to load into the reststore.
+             Path(s) of files to be loaded into the reststore.
+
+     zip [OPTIONS FILE-OPTIONS] ZIPFILE 
+         Extra files from a zipfile straight into the reststore. 
+     
+         arguments 
+             A path to the zip file to extract into the reststore.
 
          options
-             --weboff
-                 This flag forces access to a local repository only.
-             --uri=http://127.0.0.1:8586/
-                 The uri to the reststore web server.
+             --password=
+                 Define a password for unzipping the zip file.
 
-     list [OPTIONS FILE-OPTIONS]
+     list [OPTIONS FILE-OPTIONS] 
          list out hexdigests found in the reststore.   
      
          options
-             --from=0
-             --to=-1
-             --weboff
-                 This flag forces access to a local repository only.
-             --uri=http://127.0.0.1:8586/
-                 The uri to the reststore web server.
+             --select=[A:B]
+                 List all of the hashes between A:B.  Hashes are stored
+                 chronologically.  0 is the first file inserted, -1 is the last
+                 file inserted.  i.e. select the last 1000 hexdigests -1001:-1
 
-     len [OPTIONS FILE-OPTIONS]
+     len [FILE-OPTIONS]
          print out the number of files stored in the reststore.   
      
-         options
-             --weboff
-                 This flag forces access to a local repository only.
-             --uri=http://127.0.0.1:8586/
-                 The uri to the reststore web server.
-
      web [OPTIONS FILE-OPTIONS] [[HOST:][PORT]] 
          Run the RESTful web app.
          
@@ -187,21 +177,22 @@ reststore::
              --proxy_requests=False
                  If True, this web app will proxy requests through to 
                  the authoritative server defined by the client uri.
-             --uri=http://127.0.0.1:8586/
-                 This client uri points to the authoritative (or next level
-                 up) reststore web app.
 
  File options:
-    --name=files
-        Set the default reststore name (i.e. domain or realm) 
-    --hash_function=md5
-        Set the hash function to be used
-    --tune_size=100000000
-        Set the approximate size the reststore may grow up to.
-    --root=/tmp
-        Set the root for the reststore.
-    --assert_data_ok=False
-        Do extra checks when reading and writing data.
+     --name=files
+         Set the default reststore name (i.e. domain or realm) 
+     --hash_function=md5
+         Set the hash function to be used
+     --tune_size=100000000
+         Set the approximate size the reststore may grow up to.
+     --root=/tmp
+         Set the root for the reststore.
+     --assert_data_ok=False
+         Do extra checks when reading and writing data.
+     --weboff
+         This flag forces access to a local repository only.
+     --uri=http://170.0.229.223:8586/
+         The uri to the upstream reststore web server.
 
 
 
