@@ -2,6 +2,7 @@ from __future__ import print_function
 import sys
 import os
 from getopt import getopt
+import zipfile
 
 import reststore
 from reststore import config
@@ -33,9 +34,27 @@ def command_put(FilesClass, filepaths):
             return -1
         fs = FilesClass()
         hexdigest = fs.put(data)
-        print("%s: %s > %s" % (hexdigest, filepath, fs[hexdigest]))
+        print("%s: %s" % (hexdigest, filepath))
     return 0
 
+def command_zip(FilesClass, filepath, password=None):
+    """Add files from the zip file at filepath"""
+    if not zipfile.is_zipfile(filepath):
+        raise TypeError("Not a zipfile %s" % filepath)
+    fs = FilesClass()
+    zf = zipfile.ZipFile(filepath)
+    if password is not None:
+        zf.setpassword(password)
+    for i, name in enumerate(zf.namelist()):
+        data = zf.read(name, pwd=password)
+        hexdigest = fs.bulk_put(data)
+        print("%s: %s" % (hexdigest, name))
+        if i % 100 == 0:
+            print("flush ...")
+            fs.bulk_flush()
+    print("flush ...")
+    fs.bulk_flush()
+       
 def command_list(FilesClass, select_from=0, select_to=-1):
     fs = FilesClass()
     for hexdigest in fs.select(select_from, select_to):
@@ -60,52 +79,42 @@ SYNOPSIS
 
 Commands:
     
-    get [OPTIONS FILE-OPTIONS] [HEXDIGEST] > stdout
+    get [FILE-OPTIONS] [HEXDIGEST] > stdout
         Attempt to retrieve a file and write it out to stdout.  A check is
         made in the local reststore first, if the file is in available, an
         attempt to read the file from the web reststore is made. 
     
         arguments 
-            HASH define the hash to read from the reststore.
+            Use HEXDIGEST to define hash to read from the reststore.
 
-        options
-            --weboff
-                This flag forces access to a local repository only.
-            --uri=%(client_uri)s
-                The uri to the reststore web server.
-
-    put [OPTIONS FILE-OPTIONS] FILEPATH(s) 
+    put [FILE-OPTIONS] FILEPATH(s) 
         Put a file into the reststore.   
     
         arguments 
-            A path to the file to load into the reststore.
+            Path(s) of files to be loaded into the reststore.
+
+    zip [OPTIONS FILE-OPTIONS] ZIPFILE 
+        Extra files from a zipfile straight into the reststore. 
+    
+        arguments 
+            A path to the zip file to extract into the reststore.
 
         options
-            --weboff
-                This flag forces access to a local repository only.
-            --uri=%(client_uri)s
-                The uri to the reststore web server.
+            --password=
+                Define a password for unzipping the zip file.
 
-    list [OPTIONS FILE-OPTIONS]
+    list [OPTIONS FILE-OPTIONS] 
         list out hexdigests found in the reststore.   
     
         options
-            --from=0
-            --to=-1
-            --weboff
-                This flag forces access to a local repository only.
-            --uri=%(client_uri)s
-                The uri to the reststore web server.
+            --select=[A:B]
+                List all of the hashes between A:B.  Hashes are stored
+                chronologically.  0 is the first file inserted, -1 is the last
+                file inserted.  i.e. select the last 1000 hexdigests -1001:-1
 
-    len [OPTIONS FILE-OPTIONS]
+    len [FILE-OPTIONS]
         print out the number of files stored in the reststore.   
     
-        options
-            --weboff
-                This flag forces access to a local repository only.
-            --uri=%(client_uri)s
-                The uri to the reststore web server.
-
     web [OPTIONS FILE-OPTIONS] [[HOST:][PORT]] 
         Run the RESTful web app.
         
@@ -122,9 +131,6 @@ Commands:
             --proxy_requests=%(webapp_proxy_requests)s
                 If True, this web app will proxy requests through to 
                 the authoritative server defined by the client uri.
-            --uri=%(client_uri)s
-                This client uri points to the authoritative (or next level
-                up) reststore web app.
 
 File options:
     --name=%(files_name)s
@@ -137,6 +143,11 @@ File options:
         Set the root for the reststore.
     --assert_data_ok=%(files_assert_data_ok)s
         Do extra checks when reading and writing data.
+    --weboff
+        This flag forces access to a local repository only.
+    --uri=%(client_uri)s
+        The uri to the upstream reststore web server.
+
 
 """ % defaults
 
@@ -155,7 +166,7 @@ def main(args):
             'server=', 'debug=', 'quiet=', 'proxy_requests=',
             'name=', 'hash_function=', 'tune_size=', 'root=', 'assert_data_ok=',
             'uri=', 
-            'to=', 'from=',
+            'select=',
             'weboff',
             ])
     except Exception as exc:
@@ -192,21 +203,25 @@ def main(args):
         elif opt in ['--assert_data_ok']:
             files_config['assert_data_ok'] = arg.lower() != 'false'
 
+        elif opt in ['--select']:
+            try:
+                a, b = arg.split(':')
+                if not a:
+                    a = 0
+                if not b:
+                    b = -1
+            except Exception as err:
+                print("Failed to split select range %s" % arg, file=sys.stderr)
+                return -1
+            try:
+                list_command = dict(select_from = int(a), 
+                                    select_to = int(b))
+            except ValueError as err:
+                print("Failed to convert int for %s" % arg, file=sys.stderr)
+                return -1
+
         elif opt in ['--uri']:
             client_config['uri'] = arg
-
-        elif opt in ['--to']:
-            try:
-                list_command['select_to'] = int(arg)
-            except ValueError:
-                print("%s is not a valid int" % arg, file=sys.stderr)
-                return -1
-        elif opt in ['--from']:
-            try:
-                list_command['select_from'] = int(arg)
-            except ValueError:
-                print("%s is not a valid int" % arg, file=sys.stderr)
-                return -1
 
         elif opt in ['--weboff']:
             FilesClass = reststore.Files
@@ -244,7 +259,7 @@ def main(args):
         return command_list(FilesClass, **list_command)
     
     elif command == 'len':
-        return command_len(FilesClass, **list_command)
+        return command_len(FilesClass)
 
     else:
         print("%s is not a valid command " % command, file=sys.stderr)
