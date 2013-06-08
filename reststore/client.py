@@ -97,11 +97,13 @@ class FilesClient(object):
 
     def bulk_flush(self):
         if not self._bulk_put:
-            return
-        uri = "%s%s/files" % (self._uri, self._name)
+            return 0 
+        uri = "%s%s/file" % (self._uri, self._name)
         body = {'files': self._bulk_put}
+        body = json.dumps(body)
         self.request('post', uri, data=body)
         self._bulk_put = []
+        return len(body)
 
     def select(self, a, b):
         uri = "%s%s/select/%s/%s" % (self._uri, self._name, a, b)

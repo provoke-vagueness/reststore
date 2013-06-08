@@ -3,8 +3,13 @@ import traceback
 import functools
 import zlib
 import base64
-import httplib
+import client
 import json
+import sys
+try:
+    import httplib as client
+except ImportError:
+    from http import client
 
 import bottle
 bottle.BaseRequest.MEMFILE_MAX = 1600000000
@@ -47,7 +52,7 @@ def wrap_json_error(f):
         except JSONError:
             raise 
         except Exception as exc:
-            raise JSONError(httplib.INTERNAL_SERVER_ERROR,
+            raise JSONError(client.INTERNAL_SERVER_ERROR,
                     exception=exc,
                     message=traceback.format_exc())
     return wrapper
@@ -62,7 +67,7 @@ def get(name, hexdigest):
         with open(filepath) as f:
             data = base64.encodestring(zlib.compress(f.read()))
     except KeyError:
-        raise JSONError(httplib.NOT_FOUND, 
+        raise JSONError(client.NOT_FOUND, 
                 exception='KeyError',
                 message='%s not found in %s' % (hexdigest, name))
     return dict(result=data)
@@ -77,7 +82,7 @@ def put(name, hexdigest):
     try:
         files.put(data, hexdigest=hexdigest)
     except ValueError as err:
-        raise JSONError(httplib.NOT_FOUND, 
+        raise JSONError(client.NOT_FOUND, 
                 exception='ValueError',
                 message=str(err))
     return dict(result=None)
@@ -91,22 +96,16 @@ def post_multiple_files(name):
     body contains {hexdigest=bash64<zlib<data>>>, ...}
     """
     files = _get_files(name)
-    #validate input
     try:
-        body = json.loads(request.body.read())
+        body = json.loads(bottle.request.body.read())
         insert_files = body['files']
         for hexdigest, data in insert_files:
             data = zlib.decompress(base64.decodestring(data))
-            try:
-                files.put(data, hexdigest=hexdigest)
-            except ValueError as err:
-                raise JSONError(httplib.NOT_FOUND, 
-                        exception='ValueError',
-                        message=str(err))
-    except ValueError:
+            files.put(data, hexdigest=hexdigest)
+    except ValueError as err:
         raise JSONError(client.BAD_REQUEST,
                         exception='ValueError',
-                        message='Require json object in request body')
+                        message=str(err))
     return {}
 
 
