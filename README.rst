@@ -214,6 +214,9 @@ with GitHub's issues system.
 Change log
 ==========
 
+version 0.0.1 (08/06/2013)
+ 
+ * unzip insert and bulk put
 
 version 0.0.0 (06/05/2013)
 
