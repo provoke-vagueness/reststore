@@ -15,7 +15,7 @@ from reststore import config
 proxy_requests = False
 
 
-def _get_files():
+def _get_files(name):
     global proxy_requests
     if proxy_requests:
         files = reststore.FilesClient(name=name)
@@ -56,7 +56,7 @@ def wrap_json_error(f):
 @bottle.get('/<name>/file/<hexdigest>')
 @wrap_json_error
 def get(name, hexdigest):
-    files = _get_files()
+    files = _get_files(name)
     try:
         filepath = files[hexdigest]
         with open(filepath) as f:
@@ -71,7 +71,7 @@ def get(name, hexdigest):
 @bottle.put('/<name>/file/<hexdigest>')
 @wrap_json_error
 def put(name, hexdigest):
-    files = _get_files()
+    files = _get_files(name)
     data = bottle.request.body.read()
     data = zlib.decompress(base64.decodestring(data))
     try:
@@ -85,12 +85,12 @@ def put(name, hexdigest):
 
 @bottle.post('/<name>/file')
 @wrap_json_error
-def post_multiple_files(hame):
+def post_multiple_files(name):
     """Multiple file post
 
     body contains {hexdigest=bash64<zlib<data>>>, ...}
     """
-    files = _get_files()
+    files = _get_files(name)
     #validate input
     try:
         body = json.loads(request.body.read())
@@ -113,14 +113,14 @@ def post_multiple_files(hame):
 @bottle.get('/<name>/length')
 @wrap_json_error
 def get_length(name):
-    files = _get_files()
+    files = _get_files(name)
     return dict(result=len(files))
 
 
 @bottle.get('/<name>/select/<a>/<b>')
 @wrap_json_error
 def get_select(name, a, b):
-    files = _get_files()
+    files = _get_files(name)
     hexdigests = files.select(int(a), int(b))
     return dict(result=hexdigests)
 
@@ -128,7 +128,7 @@ def get_select(name, a, b):
 @bottle.get('/<name>/contains/<hexdigest>')
 @wrap_json_error
 def contains(name, hexdigest):
-    files = _get_files()
+    files = _get_files(name)
     return dict(result=hexdigest in files)
 
 
