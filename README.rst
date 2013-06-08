@@ -4,11 +4,10 @@ Introduction to reststore
 Why reststore?
 
  reststore is used by my friends and I as a simple way to share and store
- samples of malware.  Large volumes of files are what we're in it for.  We have
- demonstrated just about every possible way one can destroy a filesystem.  One
- day I'll write a guide on how things go bad when trying to store millions of
- files... 
- 
+ samples of malware.  Large volumes of files are what we're in it for.  The
+ advantage we get from using reststore is in its ability to return slices 
+ of hashes based on chronological ordering of data insert. 
+  
 What is reststore:
 
  * A convenient way to store large quantities of data.
