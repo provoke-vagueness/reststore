@@ -139,7 +139,7 @@ reststore::
          arguments 
              Path(s) of files to be loaded into the reststore.
 
-     zip [OPTIONS FILE-OPTIONS] ZIPFILE 
+     unzip [OPTIONS FILE-OPTIONS] ZIPFILE 
          Extra files from a zipfile straight into the reststore. 
      
          arguments 
