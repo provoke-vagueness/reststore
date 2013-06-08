@@ -152,7 +152,7 @@ reststore::
              --password=
                  Define a password for unzipping the zip file.
              --flush=1000 
-                 Number of files to read into memory before flushing it through
+                 Number of files to read into memory before flushing through
                  to the reststore.
 
      list [OPTIONS FILE-OPTIONS] 
