@@ -148,6 +148,9 @@ reststore::
          options
              --password=
                  Define a password for unzipping the zip file.
+             --flush=1000 
+                 Number of files to read into memory before flushing it through
+                 to the reststore.
 
      list [OPTIONS FILE-OPTIONS] 
          list out hexdigests found in the reststore.   
