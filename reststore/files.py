@@ -166,6 +166,12 @@ class Files:
         con.commit()
         return hexdigest
 
+    def bulk_put(self, data, hexdigest=None):
+        return self.put(data, hexdigest=hexdigest)
+
+    def bulk_flush(self):
+        return
+
     def __iter__(self):
         con = sqlite3.connect(self._db)
         c = con.execute(SELECT_DIGESTS)
