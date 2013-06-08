@@ -21,6 +21,7 @@ class FilesClient(object):
         self.requester = requester
         self._files = reststore.Files(name=name)
         self._name = name
+        self._bulk_put = []
         if not uri.endswith('/'):
             uri += '/'
         self._uri = uri
@@ -85,6 +86,22 @@ class FilesClient(object):
         data = base64.encodestring(zlib.compress(data))
         self.request('put', uri, data=data)
         return hexdigest
+
+    def bulk_put(self, data, hexdigest=None):
+        hexdigest = self._files.put(data, hexdigest=hexdigest)
+        if hexdigest in self:
+            return hexdigest
+        data = base64.encodestring(zlib.compress(data))
+        self._bulk_put.append((hexdigest, data))
+        return hexdigest
+
+    def bulk_flush(self):
+        if not self._bulk_put:
+            return
+        uri = "%s%s/files" % (self._uri, self._name)
+        body = {'files': self._bulk_put}
+        self.request('post', uri, data=body)
+        self._bulk_put = []
 
     def select(self, a, b):
         uri = "%s%s/select/%s/%s" % (self._uri, self._name, a, b)

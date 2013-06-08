@@ -1,4 +1,3 @@
-import bottle
 import inspect
 import traceback
 import functools
@@ -7,10 +6,23 @@ import base64
 import httplib
 import json
 
+import bottle
+bottle.BaseRequest.MEMFILE_MAX = 1600000000
+
 import reststore
 from reststore import config
 
 proxy_requests = False
+
+
+def _get_files():
+    global proxy_requests
+    if proxy_requests:
+        files = reststore.FilesClient(name=name)
+    else:
+        files = reststore.Files(name=name)
+    return files
+
 
 class JSONError(bottle.HTTPResponse):
     def __init__(self, status, message='', exception='Exception'):
@@ -44,10 +56,7 @@ def wrap_json_error(f):
 @bottle.get('/<name>/file/<hexdigest>')
 @wrap_json_error
 def get(name, hexdigest):
-    if proxy_requests:
-        files = reststore.FilesClient(name=name)
-    else:
-        files = reststore.Files(name=name)
+    files = _get_files()
     try:
         filepath = files[hexdigest]
         with open(filepath) as f:
@@ -59,15 +68,11 @@ def get(name, hexdigest):
     return dict(result=data)
 
 
-MAX_FILESIZE = 100 * 2**21
 @bottle.put('/<name>/file/<hexdigest>')
 @wrap_json_error
 def put(name, hexdigest):
-    if proxy_requests:
-        files = reststore.FilesClient(name=name)
-    else:
-        files = reststore.Files(name=name)
-    data = bottle.request.body.read(MAX_FILESIZE)
+    files = _get_files()
+    data = bottle.request.body.read()
     data = zlib.decompress(base64.decodestring(data))
     try:
         files.put(data, hexdigest=hexdigest)
@@ -78,23 +83,44 @@ def put(name, hexdigest):
     return dict(result=None)
 
 
+@bottle.post('/<name>/file')
+@wrap_json_error
+def post_multiple_files(hame):
+    """Multiple file post
+
+    body contains {hexdigest=bash64<zlib<data>>>, ...}
+    """
+    files = _get_files()
+    #validate input
+    try:
+        body = json.loads(request.body.read())
+        insert_files = body['files']
+        for hexdigest, data in insert_files):
+            data = zlib.decompress(base64.decodestring(data))
+            try:
+                files.put(data, hexdigest=hexdigest)
+            except ValueError as err:
+                raise JSONError(httplib.NOT_FOUND, 
+                        exception='ValueError',
+                        message=str(err))
+    except ValueError:
+        raise JSONError(client.BAD_REQUEST,
+                        exception='ValueError',
+                        message='Require json object in request body')
+    return {}
+
+
 @bottle.get('/<name>/length')
 @wrap_json_error
 def get_length(name):
-    if proxy_requests:
-        files = reststore.FilesClient(name=name)
-    else:
-        files = reststore.Files(name=name)
+    files = _get_files()
     return dict(result=len(files))
 
 
 @bottle.get('/<name>/select/<a>/<b>')
 @wrap_json_error
 def get_select(name, a, b):
-    if proxy_requests:
-        files = reststore.FilesClient(name=name)
-    else:
-        files = reststore.Files(name=name)
+    files = _get_files()
     hexdigests = files.select(int(a), int(b))
     return dict(result=hexdigests)
 
@@ -102,10 +128,7 @@ def get_select(name, a, b):
 @bottle.get('/<name>/contains/<hexdigest>')
 @wrap_json_error
 def contains(name, hexdigest):
-    if proxy_requests:
-        files = reststore.FilesClient(name=name)
-    else:
-        files = reststore.Files(name=name)
+    files = _get_files()
     return dict(result=hexdigest in files)
 
 
