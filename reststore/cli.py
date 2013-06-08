@@ -2,7 +2,10 @@ from __future__ import print_function
 import sys
 import os
 from getopt import getopt
-import zipfile
+try:
+    import czipfile as zipfile
+except ImportError:
+    import zipfile
 
 import reststore
 from reststore import config
@@ -37,7 +40,7 @@ def command_put(FilesClass, filepaths):
         print("%s: %s" % (hexdigest, filepath))
     return 0
 
-def command_zip(FilesClass, filepath, password=None):
+def command_unzip(FilesClass, filepath, password=None, flush_every=1000):
     """Add files from the zip file at filepath"""
     if not zipfile.is_zipfile(filepath):
         raise TypeError("Not a zipfile %s" % filepath)
@@ -45,13 +48,16 @@ def command_zip(FilesClass, filepath, password=None):
     zf = zipfile.ZipFile(filepath)
     if password is not None:
         zf.setpassword(password)
+    datalen = 0
     for i, name in enumerate(zf.namelist()):
         data = zf.read(name, pwd=password)
+        datalen += len(data)
         hexdigest = fs.bulk_put(data)
         print("%s: %s" % (hexdigest, name))
-        if i % 100 == 0:
-            print("flush ...")
-            fs.bulk_flush()
+        if i % flush_every == 0:
+            print("flush %s bytes of data..." % datalen)
+            txdatalen = fs.bulk_flush()
+            print("sent %s bytes of compressed data" % txdatalen)
     print("flush ...")
     fs.bulk_flush()
        
@@ -93,7 +99,7 @@ Commands:
         arguments 
             Path(s) of files to be loaded into the reststore.
 
-    zip [OPTIONS FILE-OPTIONS] ZIPFILE 
+    unzip [OPTIONS FILE-OPTIONS] ZIPFILE 
         Extra files from a zipfile straight into the reststore. 
     
         arguments 
@@ -102,6 +108,9 @@ Commands:
         options
             --password=
                 Define a password for unzipping the zip file.
+            --flush=1000 
+                Number of files to read into memory before flushing it through
+                to the reststore.
 
     list [OPTIONS FILE-OPTIONS] 
         list out hexdigests found in the reststore.   
@@ -166,6 +175,7 @@ def main(args):
             'server=', 'debug=', 'quiet=', 'proxy_requests=',
             'name=', 'hash_function=', 'tune_size=', 'root=', 'assert_data_ok=',
             'uri=', 
+            'password=', 'flush=',
             'select=',
             'weboff',
             ])
@@ -177,6 +187,7 @@ def main(args):
     files_config = config.values['files']
     client_config = config.values['client']
     list_command = dict()
+    unzip_command = dict()
     FilesClass = reststore.FilesClient
     for opt, arg in opts:
         if opt in ['--server']:
@@ -202,6 +213,15 @@ def main(args):
             files_config['root'] = arg
         elif opt in ['--assert_data_ok']:
             files_config['assert_data_ok'] = arg.lower() != 'false'
+
+        elif opt in ['--password']:
+            unzip_command['password'] = arg
+        elif opt in ['--flush']:
+            try:
+                unzip_command['flush_every'] = int(arg)
+            except ValueError as err:
+                print("Failed to convert int for %s" % arg, file=sys.stderr)
+                return -1
 
         elif opt in ['--select']:
             try:
@@ -254,6 +274,10 @@ def main(args):
     elif command == 'put':
         filepaths = args
         return command_put(FilesClass, filepaths)
+
+    elif command == 'unzip':
+        filepath = args[0]
+        return command_unzip(FilesClass, filepath, **unzip_command)
     
     elif command == 'list':
         return command_list(FilesClass, **list_command)
