@@ -95,7 +95,7 @@ def post_multiple_files(hame):
     try:
         body = json.loads(request.body.read())
         insert_files = body['files']
-        for hexdigest, data in insert_files):
+        for hexdigest, data in insert_files:
             data = zlib.decompress(base64.decodestring(data))
             try:
                 files.put(data, hexdigest=hexdigest)
