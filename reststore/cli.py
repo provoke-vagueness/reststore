@@ -16,7 +16,16 @@ def command_web():
     webapp.run()
     return 0
 
-def command_get(FilesClass, hexdigest, outfile=sys.stdout):
+def command_get(FilesClass, hexdigest):
+    fs = FilesClass()
+    try:
+        print(fs[hexdigest])
+    except KeyError:
+        print("Could not find a file for %s..." % hexdigest, file=sys.stderr)
+        return -1
+    return 0
+
+def command_read(FilesClass, hexdigest, outfile=sys.stdout):
     fs = FilesClass()
     try:
         with open(fs[hexdigest], 'rb') as f:
@@ -84,14 +93,20 @@ SYNOPSIS
     reststore [COMMAND]
 
 Commands:
-    
-    get [FILE-OPTIONS] [HEXDIGEST] > stdout
+
+    get [FILE-OPTIONS] [HEXDIGEST]
+        Return a filepath to the data behind hexdigest. 
+
+        arguments 
+            HEXDIGEST of the data to lookup in reststore.    
+
+    read [FILE-OPTIONS] [HEXDIGEST] > stdout
         Attempt to retrieve a file and write it out to stdout.  A check is
         made in the local reststore first, if the file is in available, an
         attempt to read the file from the web reststore is made. 
     
         arguments 
-            Use HEXDIGEST to define hash to read from the reststore.
+            HEXDIGEST of the data to lookup in reststore.    
 
     put [FILE-OPTIONS] FILEPATH(s) 
         Put a file into the reststore.   
@@ -270,6 +285,10 @@ def main(args):
     elif command == 'get':
         hexdigest = args[0]
         return command_get(FilesClass, hexdigest)
+ 
+    elif command == 'read':
+        hexdigest = args[0]
+        return command_read(FilesClass, hexdigest)
     
     elif command == 'put':
         filepaths = args
