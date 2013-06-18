@@ -86,10 +86,9 @@ class Files:
         con = sqlite3.connect(self._db)
         c = con.execute(LAST_ROWID)
         res = c.fetchone()
-        if res is None:
+        i = res[0]
+        if i is None:
             i = 0
-        else:
-            i = res[0]
         return i
     
     def get(self, hexdigest, d=None):
