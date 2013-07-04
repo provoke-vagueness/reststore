@@ -43,7 +43,7 @@ if os.path.exists(_config_file_path):
         _update_values(yaml.load(f))
 else:
     with open(_config_file_path, 'w') as f:
-        yaml.dump(values, f)
+        yaml.dump(values, f, default_flow_style=False)
 
 
 # Update config with the values found in our current env
