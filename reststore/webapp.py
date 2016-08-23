@@ -41,7 +41,7 @@ class JSONError(bottle.HTTPResponse):
                             'exception': exception,
                             'message': message})
         bottle.HTTPResponse.__init__(self, status=status, 
-                header={'content-type':'application/json'}, body=body)
+                content_type='application/json', body=body)
         
 
 def wrap_json_error(f):
