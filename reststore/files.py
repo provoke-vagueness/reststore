@@ -109,7 +109,6 @@ class Files:
 
     def __getitem__(self, hexdigest):
         con = sqlite3.connect(self._db)
-        c = con.execute(LAST_ROWID)
         c = con.execute(SELECT_FILEPATH % hexdigest)
         res = c.fetchone()
         if res is None:
@@ -146,23 +145,47 @@ class Files:
             pass
         else:
             return hexdigest
-        #create our entry
-        con = sqlite3.connect(self._db)
-        c = con.execute(INSERT_HEXDIGEST % hexdigest) 
-        rowid = c.lastrowid
+
+        attempts = 0
+        filepath = ''
         l1 = random.randint(0, self._folder_width)
         l2 = random.randint(0, self._folder_width)
-        relroot = os.path.join(self._folder_fmt%l1, 
+        while True:
+            # create our entry
+            try:
+                # would be good to reduce transaction scope until after
+                # file is written but relies on rowid for filename...
+                con = sqlite3.connect(self._db)
+                c = con.execute(INSERT_HEXDIGEST % hexdigest)
+                rowid = c.lastrowid
+                relroot = os.path.join(self._folder_fmt%l1,
                             self._folder_fmt%l2)
-        path = os.path.join(relroot, str(rowid))
-        c = con.execute(UPDATE_FILEPATH % (path, hexdigest)) 
-        dirpath = os.path.join(self._root, relroot)
-        if not os.path.exists(dirpath):
-            os.makedirs(dirpath)
-        filepath = os.path.join(self._root, path)
-        with open(filepath, 'wb') as f:
-            f.write(data)
-        con.commit()
+                path = os.path.join(relroot, str(rowid))
+                c = con.execute(UPDATE_FILEPATH % (path, hexdigest))
+                dirpath = os.path.join(self._root, relroot)
+                if not os.path.exists(dirpath):
+                    os.makedirs(dirpath)
+                filepath = os.path.join(self._root, path)
+                with open(filepath, 'wb') as f:
+                    f.write(data)
+                con.commit()
+                break
+            # handle concurrent race/lock errors on insert
+            except sqlite3.DatabaseError, ex:
+                attempts += 1
+                # remove any partial attempt
+                try:
+                    os.remove(filepath)
+                except OSError:
+                    pass
+                # did someone else succeed?
+                if self.get(hexdigest):
+                    break
+                # give up
+                if attempts >= 10:
+                    raise ex
+                time.sleep(0.2)
+
         return hexdigest
 
     def bulk_put(self, data, hexdigest=None):

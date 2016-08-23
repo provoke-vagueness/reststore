@@ -30,3 +30,20 @@ class TestFiles(unittest.TestCase):
                 self.files.__getitem__,
                     'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
 
+    def test_concurrent_puts(self):
+        """
+        Attempt to trigger issues seen with concurrent puts.
+        * Database locking on inserts
+        * Race condition when two procs try to put same data/hash
+        """
+        import multiprocessing
+        digest = self.files.hash_func('a').hexdigest()
+
+        p = multiprocessing.Pool(3)
+        res = p.map(subproc_put, ['a', 'a', 'a'])
+        self.assertEquals(res, [digest, digest, digest])
+
+
+def subproc_put(val):
+    return reststore.Files(name='test_reststore').put(val)
+
