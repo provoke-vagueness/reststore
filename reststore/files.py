@@ -5,6 +5,7 @@ import tempfile
 import sqlite3
 import math
 import random
+import time
 
 from reststore import config
 
@@ -16,14 +17,15 @@ CREATE TABLE IF NOT EXISTS files (\
  created datetime DEFAULT current_timestamp);"
 FILES_HEXDIGEST_IDX = "\
 CREATE UNIQUE INDEX files_hexdigest_idx on files(hexdigest);"
-LAST_ROWID = "SELECT MAX(rowid) from files;"
+SELECT_ROWIDS = "SELECT MIN(rowid), MAX(rowid) from files;"
+DELETE_TO_ROWID = "DELETE FROM files where rowid<=%s"
 SELECT_FILEPATH = "SELECT filepath from files where hexdigest='%s'"
 INSERT_HEXDIGEST = "INSERT INTO files (hexdigest) values ('%s')"
 UPDATE_FILEPATH = "UPDATE files set filepath='%s' where hexdigest='%s'"
 SELECT_FILEPATH_HEXDIGEST = "\
-SELECT (hexdigest, filepath) from files where rowid=%s;"
-SELECT_DIGESTS_LIMIT = "SELECT hexdigest from files LIMIT %s OFFSET %s"
-SELECT_DIGESTS = "SELECT hexdigest from files"
+SELECT hexdigest, filepath, rowid from files ORDER BY rowid LIMIT %s"
+SELECT_DIGESTS_LIMIT = "SELECT hexdigest from files ORDER BY rowid LIMIT %s OFFSET %s"
+SELECT_DIGESTS = "SELECT hexdigest from files ORDER BY rowid"
 
 
 class DataError(Exception): pass
@@ -76,20 +78,20 @@ class Files:
             con = sqlite3.connect(self._db)
             con.execute(FILES_TABLE)
             con.execute(FILES_HEXDIGEST_IDX)
-            con.commit() 
-            self.index = 0     
+            con.commit()
+            self.index = 0
         self._folder_width = math.ceil(math.pow(tune_size, 1.0/3))
         self._folder_fmt = "%%0%sd" % len(str(self._folder_width))
         self._do_assert_data_ok = assert_data_ok
 
     def __len__(self):
         con = sqlite3.connect(self._db)
-        c = con.execute(LAST_ROWID)
+        c = con.execute(SELECT_ROWIDS)
         res = c.fetchone()
-        i = res[0]
-        if i is None:
-            i = 0
-        return i
+        if res[0] is None:
+            return 0
+        start, end = res
+        return end - start + 1
     
     def get(self, hexdigest, d=None):
         """Get a filepath for the data corresponding to the hexdigest"""
@@ -218,9 +220,8 @@ class Files:
             select(10,-10) will return all of the hexdigests between the 10th
                            inserted and the 10th last inserted data.
 
-        Return a list of hexidigests
+        Return a list of hexdigests
         """
-        con = sqlite3.connect(self._db)
         if a < 0:
             a = len(self) + a + 1
         if b < 0:
@@ -229,10 +230,33 @@ class Files:
             a, b = b, a
         limit = b-a
         offset = a
+
+        con = sqlite3.connect(self._db)
         c = con.execute(SELECT_DIGESTS_LIMIT % (limit, offset))
         rows = c.fetchall()
         hexdigests = [row[0] for row in rows]
         return hexdigests
 
+    def expire(self, count):
+        """Drop the oldest `count` files from the reststore"""
+        with sqlite3.connect(self._db) as con:
+            c = con.execute(SELECT_FILEPATH_HEXDIGEST % count)
+            rows = c.fetchall()
+            if not rows:
+                return
+            # delete files and truncate db to same point
+            for hexdigest, path, rowid in rows:
+                filepath = os.path.join(self._root, path)
+                try:
+                    os.remove(filepath)
+                except OSError:
+                    # We _could_ break here as most likely cause is that
+                    # a concurrent proc has hit the same path.. however,
+                    # if there is a chance that the file could be deleted
+                    # externally we are safest to just continue and remove
+                    # the db reference, else cache cleaning would get stuck.
+                    # Downside is multiple procs could be wasting their time.
+                    pass
 
+            con.execute(DELETE_TO_ROWID % rowid)
 

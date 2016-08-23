@@ -22,7 +22,10 @@ values = dict(
                 proxy_requests=False,
                 ),
             client=dict(
-                uri='http://127.0.0.1:8586/'),
+                uri='http://127.0.0.1:8586/',
+                cache_max_entries=-1,
+                cache_batch_delete=10,
+                ),
         )
 
 def _update_values(new):
