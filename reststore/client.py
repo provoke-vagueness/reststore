@@ -11,13 +11,33 @@ else:
 import reststore
 from reststore import config
 
+def expire_cache(f):
+    """
+    Decorator to expire any candidate files
+    from the local instance if caching enabled.
+    """
+    def wrap(self, *args, **kwargs):
+        if self.cache_max_entries > 0 and \
+            self.cache_batch_delete > 0 and \
+            len(self._files) > self.cache_max_entries:
+            self._files.expire(self.cache_batch_delete)
+
+        return f(self, *args, **kwargs)
+    return wrap
+
 class FilesClient(object):
-    def __init__(self, name=None, uri=None, requester=requests):
+    def __init__(self, name=None, uri=None,
+        cache_max_entries=None, cache_batch_delete=None,
+        requester=requests):
         """
 
         """
         name = name or config.values['files']['name']
         uri = uri or config.values['client']['uri']
+        self.cache_max_entries = cache_max_entries or \
+            config.values['client']['cache_max_entries']
+        self.cache_batch_delete = cache_batch_delete or \
+            config.values['client']['cache_batch_delete']
         self.requester = requester
         self._files = reststore.Files(name=name)
         self._name = name
@@ -58,6 +78,7 @@ class FilesClient(object):
         except KeyError:
             return d
 
+    @expire_cache
     def __getitem__(self, hexdigest):
         # try and get the file back locally first
         try:
@@ -77,7 +98,8 @@ class FilesClient(object):
 
     def __setitem__(self, hexdigest, data):
         self.put(data, hexdigest=hexdigest)
-        
+
+    @expire_cache
     def put(self, data, hexdigest=None):
         hexdigest = self._files.put(data, hexdigest=hexdigest)
         if hexdigest in self:
@@ -87,6 +109,7 @@ class FilesClient(object):
         self.request('put', uri, data=data)
         return hexdigest
 
+    @expire_cache
     def bulk_put(self, data, hexdigest=None):
         hexdigest = self._files.put(data, hexdigest=hexdigest)
         if hexdigest in self:
@@ -120,4 +143,3 @@ class FilesClient(object):
             i += step
             hexdigests = self.select(i, i + step)
 
-            
