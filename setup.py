@@ -10,7 +10,8 @@ import sys
 install_requires = ["bottle>=0.11",
                     "requests>=1.1.0",
                     "pyyaml>=0.0",
-                    "czipfile>=1.0.0"]
+                    "czipfile>=1.0.0",
+                    "prometheus-client"]
 
 def load_version(filename='./reststore/version.py'):
     """Parse a __version__ number from a source file"""

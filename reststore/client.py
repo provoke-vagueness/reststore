@@ -8,8 +8,21 @@ if sys.version_info[0] < 3:
 else:
     import builtins 
 
+from prometheus_client import Counter, Summary
+
 import reststore
 from reststore import config
+
+reststore_cache_counter = Counter(
+    'reststore_cache_lookups_total',
+    'RestStore client cache lookup counter',
+    ['result']
+)
+
+reststore_cache_expiry_summary = Summary(
+    'reststore_cache_expiry_duration_seconds',
+    'Time spent expiring local cache',
+)
 
 def expire_cache(f):
     """
@@ -20,7 +33,8 @@ def expire_cache(f):
         if self.cache_max_entries > 0 and \
             self.cache_batch_delete > 0 and \
             len(self._files) > self.cache_max_entries:
-            self._files.expire(self.cache_batch_delete)
+            with reststore_cache_expiry_summary.time():
+                self._files.expire(self.cache_batch_delete)
 
         return f(self, *args, **kwargs)
     return wrap
@@ -82,9 +96,12 @@ class FilesClient(object):
     def __getitem__(self, hexdigest):
         # try and get the file back locally first
         try:
-            return self._files[hexdigest]
+            f = self._files[hexdigest]
+            reststore_cache_counter.labels('hit').inc()
+            return f
         except KeyError:
-            pass
+            reststore_cache_counter.labels('miss').inc()
+
         # fetch data from server
         uri = "%s%s/file/%s" % (self._uri, self._name, hexdigest)
         data = self.request('get', uri)['result']
